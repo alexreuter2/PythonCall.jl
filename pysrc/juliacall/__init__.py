@@ -119,9 +119,17 @@ def init():
                     else:
                         continue
                 argv.append('--' + opt[4:].replace('_', '-') + '=' + val)
+        print(f"ARGV: {argv}")
+        # argv.append("--trace-compile=/lgx/mark1/Jerome/precompile/GENERATED_INSIDERUNTIME_precompile_workload_trace.jl")
+        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/GENERATED_INRUNTIME_JeromeSysimage.so")
+        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image.so")
+        argv.append("--project=/lgx/mark1/Jerome/")
+        argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image_w_jerome.so")
+
         argv = [s.encode("utf-8") for s in argv]
 
         argc = len(argv)
+        print(f"Argv: {argv} argc: {argc}")
         argc = c.c_int(argc)
         argv = c.POINTER(c.c_char_p)((c.c_char_p * len(argv))(*argv))
         return argc, argv
@@ -183,6 +191,7 @@ def init():
 
     # parse options
     argc, argv = args_from_config(CONFIG)
+    print(f"ARGC: {argc} ARGV: {argv}")
     jl_parse_opts = lib.jl_parse_opts
     jl_parse_opts.argtypes = [c.c_void_p, c.c_void_p]
     jl_parse_opts.restype = None
