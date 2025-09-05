@@ -1,6 +1,5 @@
 # This module gets modified by PythonCall when it is loaded, e.g. to include Core, Base
 # and Main modules.
-
 __version__ = '0.9.27'
 
 _newmodule = None
@@ -55,6 +54,7 @@ def init():
     import sys
     import subprocess
     import warnings
+    import inspect
 
     # importing pytorch before juliacall sometimes causes segfaults. TODO: remove
     if "torch" in sys.modules:
@@ -75,7 +75,12 @@ def init():
         if v is not None:
             return v, f'-X{k}={v}'
         k = envkey or 'PYTHON_JULIACALL_'+name.upper()
+        # print(f"ENVKEY: {envkey}")
+        # print(f"ENVKEY: {k}")
+        # print(f"FUTHARK: {os.getenv('PYTHON_JULIACALL_SYSIMAGE')}")
         v = os.getenv(k)
+        # print(v)
+        # print(os.environ)
         if v is not None:
             return v, f'{k}={v}'
         return default, f'<default>={default}'
@@ -119,12 +124,14 @@ def init():
                     else:
                         continue
                 argv.append('--' + opt[4:].replace('_', '-') + '=' + val)
-        print(f"ARGV: {argv}")
-        # argv.append("--trace-compile=/lgx/mark1/Jerome/precompile/GENERATED_INSIDERUNTIME_precompile_workload_trace.jl")
-        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/GENERATED_INRUNTIME_JeromeSysimage.so")
-        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image.so")
+
+        # print(f"OS ENVIRNOMENT VARIABLE: {os.getenv("JULIA_PRECOMPILE")} {os.getenv("JULIA_PRECOMPILE") == '1'}")
+        if os.getenv("JULIA_PRECOMPILE") == '1':
+            file = f"/lgx/mark1/Jerome/precompile/multidrone_traces/{ inspect.stack()[-1].filename.split('/')[-1][:-3]}_trace.jl"
+            print(f"New file: {file}")
+            argv.append(f"--trace-compile={file}")
         argv.append("--project=/lgx/mark1/Jerome/")
-        argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image_w_jerome.so")
+        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image_w_jerome.so")
 
         argv = [s.encode("utf-8") for s in argv]
 
@@ -138,6 +145,7 @@ def init():
     CONFIG['init'] = choice('init', ['yes', 'no'], default='yes')[0] == 'yes'
     if not CONFIG['init']:
         return
+    
 
     # Parse some more options
     CONFIG['opt_home'] = bindir = path_option('home', check_exists=True, envkey='PYTHON_JULIACALL_BINDIR')[0]
@@ -149,7 +157,8 @@ def init():
     CONFIG['opt_min_optlevel'] = choice('min_optlevel', ['0', '1', '2', '3'])[0]
     CONFIG['opt_optimize'] = choice('optimize', ['0', '1', '2', '3'])[0]
     CONFIG['opt_procs'] = int_option('procs', accept_auto=True)[0]
-    CONFIG['opt_sysimage'] = sysimg = path_option('sysimage', check_exists=True)[0]
+    CONFIG['opt_sysimage'] = sysimg = path_option('sysimage', check_exists=True, envkey=False)[0]
+
     CONFIG['opt_threads'] = int_option('threads', accept_auto=True)[0]
     CONFIG['opt_warn_overwrite'] = choice('warn_overwrite', ['yes', 'no'])[0]
     CONFIG['opt_handle_signals'] = choice('handle_signals', ['yes', 'no'])[0]
@@ -191,11 +200,13 @@ def init():
 
     # parse options
     argc, argv = args_from_config(CONFIG)
-    print(f"ARGC: {argc} ARGV: {argv}")
+    # print(f"ARGC: {argc} ARGV: {argv}")
     jl_parse_opts = lib.jl_parse_opts
     jl_parse_opts.argtypes = [c.c_void_p, c.c_void_p]
     jl_parse_opts.restype = None
     jl_parse_opts(c.pointer(argc), c.pointer(argv))
+    # print(f"PARSE OPTS: {jl_parse_opts}")
+    # print(dir(jl_parse_opts))
     assert argc.value == 0
 
     # initialise julia
