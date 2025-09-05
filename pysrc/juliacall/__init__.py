@@ -127,7 +127,13 @@ def init():
 
         # print(f"OS ENVIRNOMENT VARIABLE: {os.getenv("JULIA_PRECOMPILE")} {os.getenv("JULIA_PRECOMPILE") == '1'}")
         if os.getenv("JULIA_PRECOMPILE") == '1':
-            file = f"/lgx/mark1/Jerome/precompile/multidrone_traces/{ inspect.stack()[-1].filename.split('/')[-1][:-3]}_trace.jl"
+            hash = subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                ).stdout.strip()
+            file = f"/lgx/mark1/Jerome/precompile/multidrone_traces/{hash}-{inspect.stack()[-1].filename.split('/')[-1][:-3]}_trace.jl"
             print(f"New file: {file}")
             argv.append(f"--trace-compile={file}")
         argv.append("--project=/lgx/mark1/Jerome/")
