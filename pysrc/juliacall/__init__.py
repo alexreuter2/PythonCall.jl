@@ -75,12 +75,7 @@ def init():
         if v is not None:
             return v, f'-X{k}={v}'
         k = envkey or 'PYTHON_JULIACALL_'+name.upper()
-        # print(f"ENVKEY: {envkey}")
-        # print(f"ENVKEY: {k}")
-        # print(f"FUTHARK: {os.getenv('PYTHON_JULIACALL_SYSIMAGE')}")
         v = os.getenv(k)
-        # print(v)
-        # print(os.environ)
         if v is not None:
             return v, f'{k}={v}'
         return default, f'<default>={default}'
@@ -125,7 +120,6 @@ def init():
                         continue
                 argv.append('--' + opt[4:].replace('_', '-') + '=' + val)
 
-        # print(f"OS ENVIRNOMENT VARIABLE: {os.getenv("JULIA_PRECOMPILE")} {os.getenv("JULIA_PRECOMPILE") == '1'}")
         if os.getenv("JULIA_PRECOMPILE") == '1':
             hash = subprocess.run(
                     ["git", "rev-parse", "HEAD"],
@@ -134,15 +128,12 @@ def init():
                     check=True
                 ).stdout.strip()
             file = f"/lgx/mark1/Jerome/precompile/multidrone_traces/{hash}-{inspect.stack()[-1].filename.split('/')[-1][:-3]}_trace.jl"
-            print(f"New file: {file}")
             argv.append(f"--trace-compile={file}")
         argv.append("--project=/lgx/mark1/Jerome/")
-        # argv.append("--sysimage=/lgx/mark1/Jerome/precompile/souloracled_image_w_jerome.so")
 
         argv = [s.encode("utf-8") for s in argv]
 
         argc = len(argv)
-        print(f"Argv: {argv} argc: {argc}")
         argc = c.c_int(argc)
         argv = c.POINTER(c.c_char_p)((c.c_char_p * len(argv))(*argv))
         return argc, argv
@@ -206,13 +197,10 @@ def init():
 
     # parse options
     argc, argv = args_from_config(CONFIG)
-    # print(f"ARGC: {argc} ARGV: {argv}")
     jl_parse_opts = lib.jl_parse_opts
     jl_parse_opts.argtypes = [c.c_void_p, c.c_void_p]
     jl_parse_opts.restype = None
     jl_parse_opts(c.pointer(argc), c.pointer(argv))
-    # print(f"PARSE OPTS: {jl_parse_opts}")
-    # print(dir(jl_parse_opts))
     assert argc.value == 0
 
     # initialise julia
